@@ -58,6 +58,25 @@
   .player:hover .top-gradient, .player.show-ui .top-gradient{opacity:1;}
   .top-gradient .title{font-size:15px;font-weight:500;}
   .top-gradient .channel{font-size:12px;color:var(--dim);}
+  .collab-row{
+    display:flex;align-items:center;gap:8px;margin-top:2px;
+  }
+  .collab-avatars{display:flex;position:relative;}
+  .collab-avatar-wrap{position:relative;}
+  .collab-avatars img{
+    width:22px;height:22px;border-radius:50%;border:2px solid #1c1c28;
+    object-fit:cover;transition:transform .15s;
+  }
+  .collab-avatars img:hover{transform:translateY(-2px) scale(1.15);z-index:2;position:relative;}
+  .collab-label{font-size:12px;color:var(--dim);white-space:nowrap;}
+  .collab-tooltip{
+    position:absolute;bottom:28px;left:0;
+    background:#0f0f0f;color:#fff;font-size:12px;font-weight:500;
+    padding:5px 10px;border-radius:6px;white-space:nowrap;
+    box-shadow:0 2px 8px rgba(0,0,0,.4);
+    opacity:0;pointer-events:none;transition:opacity .15s;
+  }
+  .collab-avatar-wrap:hover .collab-tooltip{opacity:1;}
 
   /* bottom controls bar */
   .controls{
@@ -128,11 +147,17 @@
 <body>
 
 <div class="player" id="player">
-  <video id="footageVideo" muted playsinline preload="auto" src="https://drive.google.com/uc?export=download&id=1YPGzFW62TnbsmQG6QEQ4h5iqyeu23Ewi"></video>
+  <!-- Upload your video file to the SAME GitHub repo as this HTML file,
+       then change "video.mp4" below to match your uploaded filename exactly. -->
+  <video id="footageVideo" muted playsinline preload="auto" src="video.mp4"></video>
 
   <div class="top-gradient">
-    <div class="title">Portfolio Showcase — Motion & UI Reel</div>
-    <div class="channel">Your Name · 12K views</div>
+    <div class="title">AWAL 30: The Artists Who Shaped Us.</div>
+    <div class="channel">Sony Music &amp; AWAL · 12K views</div>
+    <div class="collab-row">
+      <div class="collab-avatars" id="collabAvatars"></div>
+      <span class="collab-label" id="collabLabel">Sony Music, AWAL &amp; 4 more</span>
+    </div>
   </div>
 
   <div class="big-play" id="bigPlay">
@@ -174,6 +199,34 @@
 </div>
 
 <script>
+// --- Collaborator avatars (click each one to see their name) ---
+const collaborators = [
+  { name: "Sony Music", img: "sonymusic.jpg" },
+  { name: "AWAL",       img: "awal.jpg" },
+  { name: "Djomusic",   img: "djomusic.jpg" },
+  { name: "Ethel Cain", img: "ethelcain.jpg" },
+  { name: "CMAT",       img: "cmat.jpg" },
+  { name: "Yung Lean",  img: "yunglean.jpg" },
+];
+const collabAvatarsEl = document.getElementById('collabAvatars');
+collaborators.forEach((c, i)=>{
+  const wrap = document.createElement('div');
+  wrap.className = 'collab-avatar-wrap';
+  wrap.style.marginLeft = i ? '-8px' : '0';
+
+  const img = document.createElement('img');
+  img.src = c.img;
+  img.alt = c.name;
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'collab-tooltip';
+  tooltip.textContent = c.name;
+
+  wrap.appendChild(tooltip);
+  wrap.appendChild(img);
+  collabAvatarsEl.appendChild(wrap);
+});
+
 const player = document.getElementById('player');
 const bigPlay = document.getElementById('bigPlay');
 const playBtn = document.getElementById('playBtn');
