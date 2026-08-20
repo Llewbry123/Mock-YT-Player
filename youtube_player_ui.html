@@ -62,10 +62,13 @@
     display:flex;align-items:center;gap:8px;margin-top:2px;
   }
   .collab-avatars{display:flex;position:relative;}
-  .collab-avatar-wrap{position:relative;}
+  .collab-avatar-wrap{position:relative;flex-shrink:0;}
+  .collab-avatars{flex-wrap:nowrap;}
   .collab-avatars img{
-    width:22px;height:22px;border-radius:50%;border:2px solid #1c1c28;
-    object-fit:cover;transition:transform .15s;
+    display:block;width:22px;height:22px;min-width:22px;min-height:22px;
+    border-radius:50%;border:2px solid #1c1c28;
+    object-fit:cover;transition:transform .15s;font-size:0;color:transparent;
+    background:#3f3f3f;
   }
   .collab-avatars img:hover{transform:translateY(-2px) scale(1.15);z-index:2;position:relative;}
   .collab-label{font-size:12px;color:var(--dim);white-space:nowrap;}
