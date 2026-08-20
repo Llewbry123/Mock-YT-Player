@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouTube Player UI</title>
+<style>
+  :root{
+    --red:#ff0000;
+    --white:#fff;
+    --dim:rgba(255,255,255,.75);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;height:100%;background:#0b0b0b;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Roboto","Arial",sans-serif;
+  }
+
+  .player{
+    position:relative;
+    width:min(90vw,960px);
+    aspect-ratio:16/9;
+    border-radius:8px;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 30% 20%, #2a2140 0%, transparent 50%),
+      radial-gradient(circle at 70% 80%, #1a3a3a 0%, transparent 50%),
+      linear-gradient(135deg,#1c1c28,#111116);
+    cursor:pointer;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+
+  /* subtle ambient "footage" motion so it doesn't look like a dead frame */
+  .footage-glow{
+    position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.05), transparent 60%);
+    animation:drift 8s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes drift{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(2%,-2%) scale(1.05);}
+  }
+
+  /* center play button, shown when paused */
+  .big-play{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:74px;height:52px;background:rgba(30,30,30,.7);border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s, transform .15s;
+    opacity:1;
+  }
+  .player.playing .big-play{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.8);}
+  .big-play:hover{background:var(--red);}
+  .big-play svg{margin-left:4px;}
+
+  /* top gradient with title (appears on hover, like YouTube) */
+  .top-gradient{
+    position:absolute;top:0;left:0;right:0;height:90px;
+    background:linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
+    opacity:0;transition:opacity .25s;
+    padding:16px 20px;color:var(--white);
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .player:hover .top-gradient, .player.show-ui .top-gradient{opacity:1;}
+  .top-gradient .title{font-size:15px;font-weight:500;}
+  .top-gradient .channel{font-size:12px;color:var(--dim);}
+
+  /* bottom controls bar */
+  .controls{
+    position:absolute;left:0;right:0;bottom:0;
+    background:linear-gradient(to top, rgba(0,0,0,.75), transparent);
+    padding:0 12px 6px;
+    opacity:0;transform:translateY(6px);
+    transition:opacity .25s, transform .25s;
+  }
+  .player:hover .controls, .player.show-ui .controls{opacity:1;transform:translateY(0);}
+
+  /* progress bar */
+  .progress-row{position:relative;height:14px;display:flex;align-items:center;cursor:pointer;}
+  .progress-track{
+    position:relative;width:100%;height:3px;background:rgba(255,255,255,.25);
+    border-radius:2px;transition:height .1s;
+  }
+  .progress-row:hover .progress-track{height:5px;}
+  .progress-buffered{
+    position:absolute;left:0;top:0;height:100%;width:62%;background:rgba(255,255,255,.4);border-radius:2px;
+  }
+  .progress-played{
+    position:absolute;left:0;top:0;height:100%;width:34%;background:var(--red);border-radius:2px;
+  }
+  .progress-handle{
+    position:absolute;top:50%;left:34%;width:13px;height:13px;border-radius:50%;
+    background:var(--red);transform:translate(-50%,-50%) scale(0);
+    transition:transform .1s;
+  }
+  .progress-row:hover .progress-handle{transform:translate(-50%,-50%) scale(1);}
+
+  .controls-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0 6px;}
+  .controls-left, .controls-right{display:flex;align-items:center;gap:4px;}
+
+  .ctrl-btn{
+    width:36px;height:36px;border:none;background:transparent;color:var(--white);
+    display:flex;align-items:center;justify-content:center;border-radius:4px;
+    transition:opacity .15s, transform .1s;opacity:.9;
+  }
+  .ctrl-btn:hover{opacity:1;}
+  .ctrl-btn:active{transform:scale(.9);}
+
+  .volume-group{display:flex;align-items:center;gap:2px;}
+  .volume-slider{
+    width:0;overflow:hidden;transition:width .2s;display:flex;align-items:center;
+  }
+  .volume-group:hover .volume-slider{width:60px;}
+  .volume-track{position:relative;width:52px;height:3px;background:rgba(255,255,255,.3);border-radius:2px;margin-left:6px;}
+  .volume-fill{position:absolute;left:0;top:0;height:100%;width:70%;background:var(--white);border-radius:2px;}
+
+  .time{font-size:13px;color:var(--white);margin-left:6px;font-variant-numeric:tabular-nums;user-select:none;}
+
+  .quality-badge{
+    font-size:11px;border:1px solid rgba(255,255,255,.5);border-radius:2px;padding:1px 4px;
+    color:var(--white);margin-right:4px;letter-spacing:.5px;opacity:.9;
+  }
+
+  /* caption label bottom-left mimic */
+  .badge-row{position:absolute;bottom:52px;left:16px;display:flex;gap:6px;opacity:0;transition:opacity .25s;}
+  .player:hover .badge-row, .player.show-ui .badge-row{opacity:1;}
+
+  @media (prefers-reduced-motion:reduce){
+    .footage-glow{animation:none;}
+    *{transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="player" id="player">
+  <div class="footage-glow"></div>
+
+  <div class="top-gradient">
+    <div class="title">Portfolio Showcase — Motion & UI Reel</div>
+    <div class="channel">Your Name · 12K views</div>
+  </div>
+
+  <div class="big-play" id="bigPlay">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+  </div>
+
+  <div class="controls">
+    <div class="progress-row" id="progressRow">
+      <div class="progress-track">
+        <div class="progress-buffered"></div>
+        <div class="progress-played" id="progressPlayed"></div>
+        <div class="progress-handle" id="progressHandle"></div>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="controls-left">
+        <button class="ctrl-btn" id="playBtn" title="Play">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path id="playIcon" d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl-btn" title="Next"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+        <div class="volume-group">
+          <button class="ctrl-btn" title="Mute"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4.03v8.06A4.5 4.5 0 0016.5 12z"/></svg></button>
+          <div class="volume-slider"><div class="volume-track"><div class="volume-fill"></div></div></div>
+        </div>
+        <span class="time">4:12 / 12:45</span>
+      </div>
+
+      <div class="controls-right">
+        <span class="quality-badge">HD</span>
+        <button class="ctrl-btn" title="Captions"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zM10.5 15h-3v-1h1v-4h-1v-1h3v1h-1v4h1v1zm7 0h-4v-1l2-2.5c.3-.4.5-.8.5-1.2 0-.5-.3-.8-.8-.8s-.9.3-.9.9h-1.3c0-1.2.9-2 2.3-2 1.3 0 2.2.8 2.2 1.9 0 .7-.3 1.2-1 2l-1 1.4h2v1.3z"/></svg></button>
+        <button class="ctrl-btn" title="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 00.12-.61l-1.92-3.32a.5.5 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.49.49 0 00-.5-.42h-3.84a.49.49 0 00-.5.42l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.5.5 0 00-.59.22L1.63 8.87a.5.5 0 00.12.61l2.03 1.58c-.05.3-.08.63-.08.94s.02.64.07.94l-2.03 1.58a.5.5 0 00-.12.61l1.92 3.32c.14.24.44.34.7.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .46-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.26.1.56.02.7-.22l1.92-3.32a.5.5 0 00-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg></button>
+        <button class="ctrl-btn" title="Mini player"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 7H9v6h10V7zm2-4H3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2zm0 16.01H3V4.98h18v14.03z"/></svg></button>
+        <button class="ctrl-btn" title="Theater mode"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 7H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zm0 8H5V9h14v6z"/></svg></button>
+        <button class="ctrl-btn" title="Fullscreen" id="fsBtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const player = document.getElementById('player');
+const bigPlay = document.getElementById('bigPlay');
+const playBtn = document.getElementById('playBtn');
+const playIcon = document.getElementById('playIcon');
+const progressRow = document.getElementById('progressRow');
+const progressPlayed = document.getElementById('progressPlayed');
+const progressHandle = document.getElementById('progressHandle');
+
+let playing = false;
+let raf = null;
+
+// --- Clip window: only visually plays 1:26 -> 1:36 of the full video ---
+const FULL_LENGTH = 12 * 60 + 45; // 12:45 total video length, adjust as needed
+const CLIP_START = 1 * 60 + 26;   // 1:26
+const CLIP_END   = 1 * 60 + 36;   // 1:36
+const startPct = (CLIP_START / FULL_LENGTH) * 100;
+const endPct   = (CLIP_END / FULL_LENGTH) * 100;
+
+let currentTime = CLIP_START;
+let progress = startPct;
+
+const timeEl = document.querySelector('.time');
+function formatTime(sec){
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+function updateTimeLabel(){
+  timeEl.textContent = `${formatTime(currentTime)} / ${formatTime(FULL_LENGTH)}`;
+}
+
+function setIcon(isPlaying){
+  playIcon.setAttribute('d', isPlaying
+    ? 'M6 5h4v14H6zm8 0h4v14h-4z'   // pause icon
+    : 'M8 5v14l11-7z'               // play icon
+  );
+}
+
+function tick(){
+  if(!playing) return;
+  currentTime += 0.05;
+  if(currentTime >= CLIP_END) currentTime = CLIP_START; // loop the 10s window
+  progress = (currentTime / FULL_LENGTH) * 100;
+  progressPlayed.style.width = progress + '%';
+  progressHandle.style.left = progress + '%';
+  updateTimeLabel();
+  raf = requestAnimationFrame(tick);
+}
+
+// initialize handle/time at the clip start
+progressPlayed.style.width = startPct + '%';
+progressHandle.style.left = startPct + '%';
+updateTimeLabel();
+
+function togglePlay(){
+  playing = !playing;
+  player.classList.toggle('playing', playing);
+  setIcon(playing);
+  if(playing){
+    player.classList.add('show-ui');
+    raf = requestAnimationFrame(tick);
+  } else {
+    cancelAnimationFrame(raf);
+  }
+}
+
+bigPlay.addEventListener('click', togglePlay);
+playBtn.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
+player.addEventListener('click', (e)=>{
+  if(e.target === player || e.target.classList.contains('footage-glow')) togglePlay();
+});
+
+progressRow.addEventListener('click', (e)=>{
+  const rect = progressRow.getBoundingClientRect();
+  const pct = ((e.clientX - rect.left) / rect.width) * 100;
+  progress = Math.max(0, Math.min(100, pct));
+  progressPlayed.style.width = progress + '%';
+  progressHandle.style.left = progress + '%';
+});
+
+document.getElementById('fsBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  if(!document.fullscreenElement){ player.requestFullscreen(); }
+  else{ document.exitFullscreen(); }
+});
+</script>
+</body>
+</html>
