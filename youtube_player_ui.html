@@ -174,8 +174,8 @@
 
 <div class="player" id="player">
   <!-- Upload your video file to the SAME GitHub repo as this HTML file.
-       Filename is already set to match: 0820(1).mp4 -->
-  <video id="footageVideo" playsinline preload="auto" poster="EthelCain.jpg" src="0820(1).mp4?v=2"></video>
+       Filename is already set to match: 20260821-1252-09_9402283.mp4 -->
+  <video id="footageVideo" playsinline preload="auto" poster="EthelCain.jpg" src="20260821-1252-09_9402283.mp4?v=3"></video>
 
   <div class="top-gradient">
     <div class="title">AWAL 30: The Artists Who Shaped Us.</div>
@@ -267,13 +267,13 @@ let raf = null;
 // --- Clip window: only visually plays 1:26 -> 1:36 of the full video ---
 const FULL_LENGTH = 12 * 60 + 45; // 12:45 total video length, adjust as needed
 const CLIP_START = 1 * 60 + 26;   // 1:26 — where this clip sits in the full video
-const CLIP_END   = CLIP_START + 14; // your actual clip is 14 seconds long -> 1:40
+const CLIP_END   = CLIP_START + 31; // your actual clip is 31 seconds long -> 1:57
 const startPct = (CLIP_START / FULL_LENGTH) * 100;
 const endPct   = (CLIP_END / FULL_LENGTH) * 100;
 
 const video = document.getElementById('footageVideo');
-// The video FILE only needs to contain your clip (14s), starting from 0.
-// It will display as playing from 1:26 to 1:40 within a 12:45 total video.
+// The video FILE only needs to contain your clip (31s), starting from 0.
+// It will display as playing from 1:26 to 1:57 within a 12:45 total video.
 const VIDEO_STARTS_AT_ZERO = true;
 
 let currentTime = CLIP_START;
