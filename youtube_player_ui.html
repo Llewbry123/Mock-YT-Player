@@ -175,7 +175,7 @@
 <div class="player" id="player">
   <!-- Upload your video file to the SAME GitHub repo as this HTML file.
        Filename is already set to match: 0820(1).mp4 -->
-  <video id="footageVideo" playsinline preload="auto" poster="EthelCain.jpg" src="0820(1).mp4?v=4"></video>
+  <video id="footageVideo" playsinline preload="auto" poster="EthelCain.jpg" src="0820(1).mp4?v=5"></video>
 
   <div class="top-gradient">
     <div class="title">AWAL 30: The Artists Who Shaped Us.</div>
@@ -340,15 +340,20 @@ function togglePlay(){
 bigPlay.addEventListener('click', togglePlay);
 playBtn.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
 player.addEventListener('click', (e)=>{
-  if(e.target === player || e.target.classList.contains('footage-glow')) togglePlay();
+  if(e.target === player || e.target === video) togglePlay();
 });
 
 progressRow.addEventListener('click', (e)=>{
   const rect = progressRow.getBoundingClientRect();
-  const pct = ((e.clientX - rect.left) / rect.width) * 100;
-  progress = Math.max(0, Math.min(100, pct));
-  progressPlayed.style.width = progress + '%';
-  progressHandle.style.left = progress + '%';
+  const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+  const targetTime = (pct / 100) * FULL_LENGTH;
+  const clampedTime = Math.max(CLIP_START, Math.min(CLIP_END, targetTime));
+  currentTime = clampedTime;
+  video.currentTime = videoTimeFor(clampedTime);
+  const clampedPct = (clampedTime / FULL_LENGTH) * 100;
+  progressPlayed.style.width = clampedPct + '%';
+  progressHandle.style.left = clampedPct + '%';
+  updateTimeLabel();
 });
 
 document.addEventListener('keydown', (e)=>{
@@ -358,10 +363,18 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 
-document.getElementById('muteBtn').addEventListener('click', (e)=>{
+const muteBtn = document.getElementById('muteBtn');
+const volumeFill = document.querySelector('.volume-fill');
+function updateMuteIcon(){
+  volumeFill.style.width = video.muted ? '0%' : '70%';
+  muteBtn.style.opacity = video.muted ? '0.5' : '0.9';
+}
+muteBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
   video.muted = !video.muted;
+  updateMuteIcon();
 });
+updateMuteIcon();
 
 document.getElementById('fsBtn').addEventListener('click', (e)=>{
   e.stopPropagation();
